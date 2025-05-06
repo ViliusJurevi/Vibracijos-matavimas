@@ -46,7 +46,7 @@ Header of the state machine 'Statechart'.
 #define SC_INVALID_EVENT_VALUE 0
 #endif
 /*! Define number of states in the state enum */
-#define STATECHART_STATE_COUNT 6
+#define STATECHART_STATE_COUNT 8
 
 /*! Define dimension of the state configuration vector for orthogonal states. */
 #define STATECHART_MAX_ORTHOGONAL_STATES 1
@@ -58,6 +58,8 @@ Header of the state machine 'Statechart'.
 #define SCVI_STATECHART_MAIN_REGION_DISPLAY_GRAV 0
 #define SCVI_STATECHART_MAIN_REGION_DISP_LCD 0
 #define SCVI_STATECHART_MAIN_REGION_UART 0
+#define SCVI_STATECHART_MAIN_REGION_SIUNTIMAS 0
+#define SCVI_STATECHART_MAIN_REGION_KALIBRAVIMAS 0
 
 
 /* 
@@ -65,7 +67,8 @@ Header of the state machine 'Statechart'.
  */
 typedef enum  {
 	Statechart_invalid_event = SC_INVALID_EVENT_VALUE,
-	Statechart_Timer
+	Statechart_Timer,
+	Statechart_Send
 } StatechartEventID;
 
 /*
@@ -95,7 +98,9 @@ typedef enum
 	Statechart_main_region_Calculate_Grav,
 	Statechart_main_region_Display_Grav,
 	Statechart_main_region_Disp_LCD,
-	Statechart_main_region_Uart
+	Statechart_main_region_Uart,
+	Statechart_main_region_Siuntimas,
+	Statechart_main_region_Kalibravimas
 } StatechartStates;
 
 
@@ -103,6 +108,7 @@ typedef enum
 struct StatechartIface
 {
 	sc_boolean Timer_raised;
+	sc_boolean Send_raised;
 };
 
 
@@ -155,6 +161,8 @@ extern void statechart_trigger_without_event(Statechart* handle);
 
 /*! Raises the in event 'Timer' that is defined in the default interface scope. */ 
 extern void statechart_raise_timer(Statechart* handle);
+/*! Raises the in event 'Send' that is defined in the default interface scope. */ 
+extern void statechart_raise_send(Statechart* handle);
 
 /*!
  * Checks whether the state machine is active (until 2.4.1 this method was used for states).

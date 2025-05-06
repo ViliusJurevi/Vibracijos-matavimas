@@ -69,12 +69,9 @@ static void MX_TIM6_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 uint8_t TxBuffer[120];
-uint8_t RxBuffer[20];
-
+uint8_t RxBuffer[1];
 
 #define MPU_ADDR 0x68 << 1  // I2C address of the MPU-6050
-#define AFS_SEL 2           // Accelerometer Configuration Settings   AFS_SEL=2, Full Scale Range = +/- 8 [g]
-#define DLPF_SEL 0          // DLPF Configuration Settings  Accel BW 260Hz, Delay 0ms / Gyro BW 256Hz, Delay 0.98ms, Fs 8KHz
 
 int16_t AcX, AcY, AcZ;            // Accelerometer values
 long Cal_AcX, Cal_AcY, Cal_AcZ;   // Calibration values
@@ -103,7 +100,8 @@ float RMS_GAcX_LCD;
 float RMS_GAcY_LCD;
 float RMS_GAcZ_LCD; 
 
-
+uint8_t current_range; // Reikės perskaityti iš saugyklos
+uint8_t range_cmd;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -130,20 +128,20 @@ void LCD_Write4Bits(uint8_t data)
 void LCD_SendCommand(uint8_t cmd)
 {
     HAL_GPIO_WritePin(RS_PORT, RS_PIN, GPIO_PIN_RESET); // RS = 0 (komanda)
-    HAL_GPIO_WritePin(RW_PORT, RW_PIN, GPIO_PIN_RESET);  // R/W = 0 (ra?ymas)
+    HAL_GPIO_WritePin(RW_PORT, RW_PIN, GPIO_PIN_RESET);  // R/W = 0 (rasymas)
     
-    LCD_Write4Bits(cmd >> 4);  // Auk?tesni 4 bitai
-    LCD_Write4Bits(cmd & 0x0F); // ?emesni 4 bitai
+    LCD_Write4Bits(cmd >> 4);  // Aukstesni 4 bitai
+    LCD_Write4Bits(cmd & 0x0F); // zemesni 4 bitai
     if (cmd < 4) HAL_Delay(2);  // Jei komanda buvo "Clear" ar "Home"
 }
 
 void LCD_SendData(uint8_t data)
 {
     HAL_GPIO_WritePin(RS_PORT, RS_PIN, GPIO_PIN_SET);  // RS = 1 (duomenys)
-    HAL_GPIO_WritePin(RW_PORT, RW_PIN, GPIO_PIN_RESET); // R/W = 0 (ra?ymas)
+    HAL_GPIO_WritePin(RW_PORT, RW_PIN, GPIO_PIN_RESET); // R/W = 0 (rasymas)
     
-    LCD_Write4Bits(data >> 4);  // Auk?tesni 4 bitai
-    LCD_Write4Bits(data & 0x0F); // ?emesni 4 bitai
+    LCD_Write4Bits(data >> 4);  // Aukstesni 4 bitai
+    LCD_Write4Bits(data & 0x0F); // zemesni 4 bitai
     HAL_Delay(1);
 }
 
@@ -157,18 +155,18 @@ void statechart_lCD_Init(Statechart* handle){
     HAL_Delay(5);
     LCD_Write4Bits(0x03);
     HAL_Delay(1);
-    LCD_Write4Bits(0x02);  // 4-bitu re?imas
+    LCD_Write4Bits(0x02);  // 4-bitu rezimas
     HAL_Delay(1);
-    LCD_SendCommand(0x28);  // 4-bitu re?imas, 2 eilutes, 5x8 simboliai
-    LCD_SendCommand(0x0C);  // Ijungti ekrana, i?jungti kursoriu
-    LCD_SendCommand(0x06);  // Inkrementuoti kursori
-    LCD_SendCommand(0x01);  // I?valyti ekrana
+    LCD_SendCommand(0x28);  // 4-bitu rezimas, 2 eilutes, 5x8 simboliai
+    LCD_SendCommand(0x0C);  // Ijungti ekrana, isjungti kursoriu
+    LCD_SendCommand(0x06);  // Inkrementuoti kursoriu
+    LCD_SendCommand(0x01);  // Isvalyti ekrana
     HAL_Delay(2);
 	
 }
 void LCD_Clear(void)
 {
-    LCD_SendCommand(0x01); // I?valyti ekrana
+    LCD_SendCommand(0x01); // Isvalyti ekrana
     HAL_Delay(2);
 }
 
@@ -186,15 +184,11 @@ void LCD_SendString(char *str)
 void statechart_mPU6050_Init(Statechart* handle) {
     uint8_t data;
 
-    // Wake up MPU6050
-    data = 0;
-    HAL_I2C_Mem_Write(&hi2c1, MPU_ADDR, 0x6B, 1, &data, 1, HAL_MAX_DELAY);
-
-    // Set Clock Source
+    // Clock Source
     data = 0x03;
     HAL_I2C_Mem_Write(&hi2c1, MPU_ADDR, 0x6B, 1, &data, 1, HAL_MAX_DELAY);
 
-    // Set accelerometer range to +/- 2g
+    // Akselerometro diapazonas +/- 2g
     data = 0x00;
     HAL_I2C_Mem_Write(&hi2c1, MPU_ADDR, 0x1C, 1, &data, 1, HAL_MAX_DELAY);
 
@@ -204,7 +198,7 @@ void statechart_mPU6050_Init(Statechart* handle) {
 }
 
 void statechart_gravity_Range(Statechart* handle) {
-    Grvt_unit = 4096.0;
+     
 }
 
 void statechart_mPU6050_Read_Accel(Statechart* handle) {
@@ -277,23 +271,27 @@ void statechart_display_Grvt(Statechart* handle) {
 
 
 void statechart_display_LCD(Statechart* handle){
-    char buf[40];
+  char buf[40];
+  
 
-    LCD_Clear();
+  LCD_Clear();
 
-    LCD_SetCursor(0, 0);
-    sprintf(buf, "Ax=%-6.2f", RMS_GAcX_LCD);
-    LCD_SendString(buf);
+  // Rodyti diapazoną pirmoje eilutėje per vidurį
+  LCD_SetCursor(0, (16 - 10) / 2); // Centravimas (16 simbolių eilutė, "Range: Xg" yra 10)
+  sprintf(buf, "        %dg", (current_range == 0 ? 2 : (current_range == 1 ? 4 : (current_range == 2 ? 8 : 16))));
+  LCD_SendString(buf);
 
-    LCD_SetCursor(1, 0);
-    sprintf(buf, "Ay=%-6.2f", RMS_GAcY_LCD);
-    LCD_SendString(buf);
+  LCD_SetCursor(1, 0);
+  sprintf(buf, "Ay=%-6.2f", RMS_GAcY_LCD);
+  LCD_SendString(buf);
 
-    LCD_SetCursor(2, 0);
-    sprintf(buf, "Az=%-6.2f", RMS_GAcZ_LCD);
-    LCD_SendString(buf);
+  LCD_SetCursor(2, 0);
+  sprintf(buf, "Az=%-6.2f", RMS_GAcZ_LCD);
+  LCD_SendString(buf);
 
-    
+  LCD_SetCursor(0, 0); // Atstatyti kursorių Ax rodymui
+  sprintf(buf, "Ax=%-6.2f", RMS_GAcX_LCD);
+  LCD_SendString(buf);
 }
 
 
@@ -317,6 +315,60 @@ void statechart_rMS(Statechart* handle){
 }
 
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    if (huart->Instance == USART1) {
+        if (RxBuffer[0] >= '0' && RxBuffer[0] <= '3') {
+            range_cmd = RxBuffer[0] - '0';  // Atnaujinam globalų range_cmd
+            statechart_raise_send(&handle); // Tada iškeliame įvykį
+					  statechart_set_accel_range(&handle);
+        }
+
+        // Vėl paleidžiam priėmimą
+        HAL_UART_Receive_IT(&huart1, RxBuffer, 1);
+    }
+}
+
+
+void statechart_set_accel_range(Statechart* handle) {
+    uint8_t data;
+
+    current_range = range_cmd; // Atnaujiname dabartinį režimą
+
+    switch (range_cmd) {
+        case 0: // 2g
+            data = 0x00;
+            Grvt_unit = 16384.0;
+            break;
+        case 1: // 4g
+            data = 0x08;
+            Grvt_unit = 8192.0;
+            break;
+        case 2: // 8g
+            data = 0x10;
+            Grvt_unit = 4096.0;
+            break;
+        case 3: // 16g
+            data = 0x18;
+            Grvt_unit = 2048.0;
+            break;
+        default:
+            data = 0x00;
+            Grvt_unit = 16384.0;
+            current_range = 0;
+            break;
+    }
+
+    HAL_I2C_Mem_Write(&hi2c1, MPU_ADDR, 0x1C, 1, &data, 1, HAL_MAX_DELAY);
+    
+    // Gali būti papildomų veiksmų, jei reikia, pvz. LCD atnaujinimas
+    if (sample_no >= 30) {
+        statechart_display_LCD(handle);
+			  
+    }  
+}
+
+
+
 /* USER CODE END 0 */
 
 /**
@@ -327,7 +379,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+   
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -356,6 +408,8 @@ int main(void)
 
     
 		
+		
+		
 
    
 /* MCU Configuration */
@@ -368,13 +422,16 @@ int main(void)
     LCD_SendString("MPU6050 Accel");
     LCD_SetCursor(1, 0);
     LCD_SendString("Starting...");
-    HAL_Delay(3000);
+    HAL_Delay(2000);
     
+		
+		HAL_UART_Receive_IT(&huart1, RxBuffer, 1); // Pradėti UART priėmimą
+		
+	  statechart_set_accel_range(&handle);
+		
     statechart_lCD_Init(&handle);               // LCD startas
 		
     statechart_mPU6050_Init(&handle);           // MPU startas
-		
-    statechart_gravity_Range(&handle);          // nustatom G vienetus
 		
     statechart_mPU6050_Calibrate(&handle);      // kalibracija
     

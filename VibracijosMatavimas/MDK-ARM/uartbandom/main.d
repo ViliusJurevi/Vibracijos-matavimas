@@ -25,6 +25,7 @@ uartbandom/main.o: ..\Core\Src\main.c ..\Core\Inc\main.h \
   ..\Drivers\STM32L0xx_HAL_Driver\Inc\stm32l0xx_hal_tim_ex.h \
   ..\Drivers\STM32L0xx_HAL_Driver\Inc\stm32l0xx_hal_uart.h \
   ..\Drivers\STM32L0xx_HAL_Driver\Inc\stm32l0xx_hal_uart_ex.h \
-  ..\..\uartbandom\lcd.h ..\..\Busenosdiagrama\src-gen\Statechart.h \
+  ..\..\VibracijosMatavimas\lcd.h \
+  ..\..\Busenosdiagrama\src-gen\Statechart.h \
   ..\..\Busenosdiagrama\src-gen\..\src\sc_types.h \
   ..\..\Busenosdiagrama\src-gen\Statechart_required.h

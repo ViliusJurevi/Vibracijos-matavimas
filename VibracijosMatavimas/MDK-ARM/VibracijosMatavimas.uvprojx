@@ -341,7 +341,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32L073xx</Define>
               <Undefine></Undefine>
-              <IncludePath>../Core/Inc;../Drivers/STM32L0xx_HAL_Driver/Inc;../Drivers/STM32L0xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32L0xx/Include;../Drivers/CMSIS/Include;../MDK-ARM;../../uartbandom;../../Busenosdiagrama/src;../../Busenosdiagrama/src-gen</IncludePath>
+              <IncludePath>../Core/Inc;../Drivers/STM32L0xx_HAL_Driver/Inc;../Drivers/STM32L0xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32L0xx/Include;../Drivers/CMSIS/Include;../MDK-ARM;../../uartbandom;../../Busenosdiagrama/src;../../Busenosdiagrama/src-gen;..\..\VibracijosMatavimas</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

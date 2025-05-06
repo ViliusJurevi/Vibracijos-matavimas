@@ -21,11 +21,14 @@ static void enact_main_region_Calculate_Grav(Statechart* handle);
 static void enact_main_region_Display_Grav(Statechart* handle);
 static void enact_main_region_Disp_LCD(Statechart* handle);
 static void enact_main_region_Uart(Statechart* handle);
+static void enact_main_region_Siuntimas(Statechart* handle);
+static void enact_main_region_Kalibravimas(Statechart* handle);
 static void exact_main_region_Disp_LCD(Statechart* handle);
 static void enseq_main_region_Inicializacija_default(Statechart* handle);
 static void enseq_main_region_Read_Accel_default(Statechart* handle);
 static void enseq_main_region_Disp_LCD_default(Statechart* handle);
 static void enseq_main_region_Uart_default(Statechart* handle);
+static void enseq_main_region_Siuntimas_default(Statechart* handle);
 static void enseq_main_region_default(Statechart* handle);
 static void exseq_main_region_Inicializacija(Statechart* handle);
 static void exseq_main_region_Read_Accel(Statechart* handle);
@@ -33,6 +36,8 @@ static void exseq_main_region_Calculate_Grav(Statechart* handle);
 static void exseq_main_region_Display_Grav(Statechart* handle);
 static void exseq_main_region_Disp_LCD(Statechart* handle);
 static void exseq_main_region_Uart(Statechart* handle);
+static void exseq_main_region_Siuntimas(Statechart* handle);
+static void exseq_main_region_Kalibravimas(Statechart* handle);
 static void exseq_main_region(Statechart* handle);
 static void react_main_region__entry_Default(Statechart* handle);
 
@@ -53,6 +58,12 @@ static sc_integer main_region_Disp_LCD_react(Statechart* handle, const sc_intege
 
 /*! The reactions of state Uart. */
 static sc_integer main_region_Uart_react(Statechart* handle, const sc_integer transitioned_before);
+
+/*! The reactions of state Siuntimas. */
+static sc_integer main_region_Siuntimas_react(Statechart* handle, const sc_integer transitioned_before);
+
+/*! The reactions of state Kalibravimas. */
+static sc_integer main_region_Kalibravimas_react(Statechart* handle, const sc_integer transitioned_before);
 
 
 static void clear_in_events(Statechart* handle);
@@ -198,6 +209,14 @@ sc_boolean statechart_is_state_active(const Statechart* handle, StatechartStates
 			result = (sc_boolean) (handle->stateConfVector[SCVI_STATECHART_MAIN_REGION_UART] == Statechart_main_region_Uart
 			);
 				break;
+		case Statechart_main_region_Siuntimas :
+			result = (sc_boolean) (handle->stateConfVector[SCVI_STATECHART_MAIN_REGION_SIUNTIMAS] == Statechart_main_region_Siuntimas
+			);
+				break;
+		case Statechart_main_region_Kalibravimas :
+			result = (sc_boolean) (handle->stateConfVector[SCVI_STATECHART_MAIN_REGION_KALIBRAVIMAS] == Statechart_main_region_Kalibravimas
+			);
+				break;
 			default:
 				result = bool_false;
 				break;
@@ -208,6 +227,7 @@ sc_boolean statechart_is_state_active(const Statechart* handle, StatechartStates
 static void clear_in_events(Statechart* handle)
 {
 	handle->iface.Timer_raised = bool_false;
+	handle->iface.Send_raised = bool_false;
 }
 
 static void micro_step(Statechart* handle)
@@ -242,6 +262,16 @@ static void micro_step(Statechart* handle)
 		case Statechart_main_region_Uart :
 		{
 			main_region_Uart_react(handle,-1);
+			break;
+		}
+		case Statechart_main_region_Siuntimas :
+		{
+			main_region_Siuntimas_react(handle,-1);
+			break;
+		}
+		case Statechart_main_region_Kalibravimas :
+		{
+			main_region_Kalibravimas_react(handle,-1);
 			break;
 		}
 		default: 
@@ -284,6 +314,12 @@ void statechart_raise_timer(Statechart* handle)
 	run_cycle(handle);
 }
 
+void statechart_raise_send(Statechart* handle)
+{
+	statechart_add_event_to_queue(&(handle->in_event_queue), Statechart_Send);
+	run_cycle(handle);
+}
+
 
 
 
@@ -299,8 +335,6 @@ static void enact_main_region_Inicializacija(Statechart* handle)
 {
 	/* Entry action for state 'Inicializacija'. */
 	statechart_mPU6050_Init(handle);
-	statechart_gravity_Range(handle);
-	statechart_mPU6050_Calibrate(handle);
 	statechart_lCD_Init(handle);
 	handle->completed = bool_true;
 }
@@ -341,6 +375,20 @@ static void enact_main_region_Uart(Statechart* handle)
 	handle->completed = bool_true;
 }
 
+static void enact_main_region_Siuntimas(Statechart* handle)
+{
+	/* Entry action for state 'Siuntimas'. */
+	statechart_set_accel_range(handle);
+	handle->completed = bool_true;
+}
+
+static void enact_main_region_Kalibravimas(Statechart* handle)
+{
+	/* Entry action for state 'Kalibravimas'. */
+	statechart_mPU6050_Calibrate(handle);
+	handle->completed = bool_true;
+}
+
 /* Exit action for state 'Disp_LCD'. */
 static void exact_main_region_Disp_LCD(Statechart* handle)
 {
@@ -378,6 +426,14 @@ static void enseq_main_region_Uart_default(Statechart* handle)
 	/* 'default' enter sequence for state Uart */
 	enact_main_region_Uart(handle);
 	handle->stateConfVector[0] = Statechart_main_region_Uart;
+}
+
+/* 'default' enter sequence for state Siuntimas */
+static void enseq_main_region_Siuntimas_default(Statechart* handle)
+{
+	/* 'default' enter sequence for state Siuntimas */
+	enact_main_region_Siuntimas(handle);
+	handle->stateConfVector[0] = Statechart_main_region_Siuntimas;
 }
 
 /* 'default' enter sequence for region main region */
@@ -430,6 +486,20 @@ static void exseq_main_region_Uart(Statechart* handle)
 	handle->stateConfVector[0] = Statechart_last_state;
 }
 
+/* Default exit sequence for state Siuntimas */
+static void exseq_main_region_Siuntimas(Statechart* handle)
+{
+	/* Default exit sequence for state Siuntimas */
+	handle->stateConfVector[0] = Statechart_last_state;
+}
+
+/* Default exit sequence for state Kalibravimas */
+static void exseq_main_region_Kalibravimas(Statechart* handle)
+{
+	/* Default exit sequence for state Kalibravimas */
+	handle->stateConfVector[0] = Statechart_last_state;
+}
+
 /* Default exit sequence for region main region */
 static void exseq_main_region(Statechart* handle)
 {
@@ -467,6 +537,16 @@ static void exseq_main_region(Statechart* handle)
 			exseq_main_region_Uart(handle);
 			break;
 		}
+		case Statechart_main_region_Siuntimas :
+		{
+			exseq_main_region_Siuntimas(handle);
+			break;
+		}
+		case Statechart_main_region_Kalibravimas :
+		{
+			exseq_main_region_Kalibravimas(handle);
+			break;
+		}
 		default: 
 			/* do nothing */
 			break;
@@ -489,9 +569,9 @@ static sc_integer main_region_Inicializacija_react(Statechart* handle, const sc_
 	{ 
 		/* Default exit sequence for state Inicializacija */
 		handle->stateConfVector[0] = Statechart_last_state;
-		/* 'default' enter sequence for state Read_Accel */
-		enact_main_region_Read_Accel(handle);
-		handle->stateConfVector[0] = Statechart_main_region_Read_Accel;
+		/* 'default' enter sequence for state Kalibravimas */
+		enact_main_region_Kalibravimas(handle);
+		handle->stateConfVector[0] = Statechart_main_region_Kalibravimas;
 	}  else
 	{
 		/* Always execute local reactions. */
@@ -596,9 +676,53 @@ static sc_integer main_region_Uart_react(Statechart* handle, const sc_integer tr
 			enseq_main_region_Disp_LCD_default(handle);
 		}  else
 		{
-			statechart_internal_set_sample_no(handle, (handle->internal.sample_no + 1));
-			enseq_main_region_Read_Accel_default(handle);
+			if (handle->iface.Send_raised == bool_true)
+			{ 
+				enseq_main_region_Siuntimas_default(handle);
+			}  else
+			{
+				statechart_internal_set_sample_no(handle, (handle->internal.sample_no + 1));
+				enseq_main_region_Read_Accel_default(handle);
+			}
 		}
+	}  else
+	{
+		/* Always execute local reactions. */
+		transitioned_after = transitioned_before;
+	}
+	return transitioned_after;
+}
+
+static sc_integer main_region_Siuntimas_react(Statechart* handle, const sc_integer transitioned_before)
+{
+	/* The reactions of state Siuntimas. */
+ 			sc_integer transitioned_after = transitioned_before;
+	if (handle->doCompletion == bool_true)
+	{ 
+		/* Default exit sequence for state Siuntimas */
+		handle->stateConfVector[0] = Statechart_last_state;
+		/* 'default' enter sequence for state Kalibravimas */
+		enact_main_region_Kalibravimas(handle);
+		handle->stateConfVector[0] = Statechart_main_region_Kalibravimas;
+	}  else
+	{
+		/* Always execute local reactions. */
+		transitioned_after = transitioned_before;
+	}
+	return transitioned_after;
+}
+
+static sc_integer main_region_Kalibravimas_react(Statechart* handle, const sc_integer transitioned_before)
+{
+	/* The reactions of state Kalibravimas. */
+ 			sc_integer transitioned_after = transitioned_before;
+	if (handle->doCompletion == bool_true)
+	{ 
+		/* Default exit sequence for state Kalibravimas */
+		handle->stateConfVector[0] = Statechart_last_state;
+		/* 'default' enter sequence for state Read_Accel */
+		enact_main_region_Read_Accel(handle);
+		handle->stateConfVector[0] = Statechart_main_region_Read_Accel;
 	}  else
 	{
 		/* Always execute local reactions. */
@@ -679,6 +803,11 @@ static sc_boolean statechart_dispatch_event(Statechart* handle, const statechart
 		case Statechart_Timer:
 		{
 			handle->iface.Timer_raised = bool_true;
+			return bool_true;
+		}
+		case Statechart_Send:
+		{
+			handle->iface.Send_raised = bool_true;
 			return bool_true;
 		}
 		default:

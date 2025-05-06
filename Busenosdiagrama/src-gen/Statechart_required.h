@@ -24,6 +24,7 @@ This state machine makes use of operations declared in the state machines interf
 - statechart_display_Grvt
 - statechart_display_LCD
 - statechart_send_Uart
+- statechart_set_accel_range
 - statechart_rMS
 are defined.
 
@@ -40,6 +41,7 @@ extern void statechart_calculate_Gravity( Statechart* handle);
 extern void statechart_display_Grvt( Statechart* handle);
 extern void statechart_display_LCD( Statechart* handle);
 extern void statechart_send_Uart( Statechart* handle);
+extern void statechart_set_accel_range( Statechart* handle);
 extern void statechart_rMS( Statechart* handle);
 
 

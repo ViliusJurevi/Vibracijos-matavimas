@@ -5,7 +5,7 @@
       <vertices xsi:type="sgraph:Entry" xmi:id="_V0GzOSKvEfCV_eCmCI-cVA">
         <outgoingTransitions xmi:id="_V0GzOiKvEfCV_eCmCI-cVA" target="_V0OuwCKvEfCV_eCmCI-cVA"/>
       </vertices>
-      <vertices xsi:type="sgraph:State" xmi:id="_V0OuwCKvEfCV_eCmCI-cVA" specification="entry/ MPU6050_Init();&#xD;&#xA;LCD_Init()" name="Inicializacija" incomingTransitions="_V0GzOiKvEfCV_eCmCI-cVA">
+      <vertices xsi:type="sgraph:State" xmi:id="_V0OuwCKvEfCV_eCmCI-cVA" specification="entry/ MPU6050_Init();&#xD;&#xA;Gravity_Range();&#xD;&#xA;&#xD;&#xA;LCD_Init()" name="Inicializacija" incomingTransitions="_V0GzOiKvEfCV_eCmCI-cVA">
         <outgoingTransitions xmi:id="_e6ICMCqEEfCiic6LpdgmjQ" specification="" target="_awjkwCqEEfCiic6LpdgmjQ"/>
       </vertices>
       <vertices xsi:type="sgraph:State" xmi:id="_V0Ou1CKvEfCV_eCmCI-cVA" specification="entry/ MPU6050_Read_Accel()&#xD;&#xA;" name="Read_Accel" incomingTransitions="_8lIaUCK0EfCV_eCmCI-cVA _AKILECK1EfCV_eCmCI-cVA _fn4gECqEEfCiic6LpdgmjQ">
